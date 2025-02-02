@@ -1,4 +1,8 @@
 # report deauth attack
+
+> [!CAUTION]
+> 악용에 대한 책임을 지지 않습니다
+
 ## 과제
 Deauth Attack 프로그램을 작성하라
 
