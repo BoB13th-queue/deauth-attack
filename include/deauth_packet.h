@@ -17,7 +17,7 @@ class DeauthPacket
 {
 public:
     DeauthPacket(const Mac &ap_mac, const Mac &st_mac)
-        : type(DEAUTH_TYPE), flags(0x00), duration(DURATION), dest_mac(ap_mac), src_mac(st_mac), bssid(ap_mac),
+        : type(DEAUTH_TYPE), flags(0x00), duration(DURATION), dest_mac(st_mac), src_mac(ap_mac), bssid(ap_mac),
           frag_seq_num(FRAG_SEQ_NUM), reason_code(DEAUTH_REASON_CODE) {}
 
     vector<uint8_t> toBytes() const
