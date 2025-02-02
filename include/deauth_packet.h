@@ -8,10 +8,10 @@
 
 using namespace std;
 
-const uint8_t DEAUTH_TYPE = 0xC0;
-const uint8_t DEAUTH_REASON_CODE = 0x07; //	Class 3 frame received from nonassociated STA (연결되지 않은 STA가 Class 3 프레임을 전송함)
-const uint16_t DURATION = 0x013A;
-const uint16_t FRAG_SEQ_NUM = 0x0000;
+constexpr uint8_t DEAUTH_TYPE = 0xC0;
+constexpr uint8_t DEAUTH_REASON_CODE = 0x07; //	Class 3 frame received from nonassociated STA (연결되지 않은 STA가 Class 3 프레임을 전송함)
+constexpr uint16_t DURATION = 0x013A;
+constexpr uint16_t FRAG_SEQ_NUM = 0x0000;
 
 class DeauthPacket
 {

